@@ -26,7 +26,7 @@ from scipy.optimize import brentq
 # All kernel functions integrate to unity
 
 
-def gauss_integral(n):
+def kernel_gauss_integral(n):
     r"""
     Solve the integral
     \int_0^1 exp(-0.5 * x * x) x^n dx
@@ -52,7 +52,7 @@ def gauss_integral(n):
         raise ValueError("n must be odd or even.")
 
 
-def trig_integral(k):
+def kernel_trig_integral(k):
     """
     Returns the solutions to
     Is(k) = int_0^1 sin(pi * x / 2) x^k dx
@@ -144,7 +144,7 @@ def volume_unit_ball(d, p=2):
     return 2.0 ** d * gamma(1 + 1 / p) ** d / gamma(1 + d / p)
 
 
-def epanechnikov(x, dims=1):
+def kernel_epanechnikov(x, dims=1):
     normalization = 2 / (dims + 2)
     dist_sq = x ** 2
     out = np.zeros_like(dist_sq)
@@ -153,13 +153,13 @@ def epanechnikov(x, dims=1):
     return out
 
 
-def gaussian(x, dims=1):
-    normalization = dims * gauss_integral(dims - 1)
+def kernel_gaussian(x, dims=1):
+    normalization = dims * kernel_gauss_integral(dims - 1)
     dist_sq = x ** 2
     return np.exp(-dist_sq / 2) / normalization
 
 
-def box(x, dims=1):
+def kernel_box(x, dims=1):
     normalization = 1
     out = np.zeros_like(x)
     mask = x < 1
@@ -167,12 +167,12 @@ def box(x, dims=1):
     return out
 
 
-def exponential(x, dims=1):
+def kernel_exponential(x, dims=1):
     normalization = gamma(dims) * dims
     return np.exp(-x) / normalization
 
 
-def tri(x, dims=1):
+def kernel_tri(x, dims=1):
     normalization = 1 / (dims + 1)
     out = np.zeros_like(x)
     mask = x < 1
@@ -180,7 +180,7 @@ def tri(x, dims=1):
     return out
 
 
-def biweight(x, dims=1):
+def kernel_biweight(x, dims=1):
     normalization = 8 / ((dims + 2) * (dims + 4))
     dist_sq = x ** 2
     out = np.zeros_like(dist_sq)
@@ -189,7 +189,7 @@ def biweight(x, dims=1):
     return out
 
 
-def triweight(x, dims=1):
+def kernel_triweight(x, dims=1):
     normalization = 48 / ((dims + 2) * (dims + 4) * (dims + 6))
     dist_sq = x ** 2
     out = np.zeros_like(dist_sq)
@@ -198,7 +198,7 @@ def triweight(x, dims=1):
     return out
 
 
-def tricube(x, dims=1):
+def kernel_tricube(x, dims=1):
     normalization = 162 / ((dims + 3) * (dims + 6) * (dims + 9))
     out = np.zeros_like(x)
     mask = x < 1
@@ -206,8 +206,8 @@ def tricube(x, dims=1):
     return out
 
 
-def cosine(x, dims=1):
-    Is, Ic = trig_integral(dims - 1)
+def kernel_cosine(x, dims=1):
+    Is, Ic = kernel_trig_integral(dims - 1)
     normalization = Ic
     out = np.zeros_like(x)
     mask = x < 1
@@ -215,11 +215,11 @@ def cosine(x, dims=1):
     return out
 
 
-def logistic(x, dims=1):
+def kernel_logistic(x, dims=1):
     return 1 / (2 + 2 * np.cosh(x))
 
 
-def sigmoid(x, dims=1):
+def kernel_sigmoid(x, dims=1):
     return 1 / (np.pi * np.cosh(x))
 
 
@@ -327,17 +327,17 @@ class Kernel(collections.abc.Callable):
     __call__ = evaluate
 
 
-gaussian = Kernel(gaussian, var=1, support=np.inf)
-exp = Kernel(exponential, var=4, support=np.inf)
-box = Kernel(box, var=1 / 3, support=1)
-tri = Kernel(tri, var=1 / 6, support=1)
-epa = Kernel(epanechnikov, var=1 / 5, support=1)
-biweight = Kernel(biweight, var=1 / 7, support=1)
-triweight = Kernel(triweight, var=1 / 9, support=1)
-tricube = Kernel(tricube, var=35 / 243, support=1)
-cosine = Kernel(cosine, var=(1 - (8 / np.pi ** 2)), support=1)
-logistic = Kernel(logistic, var=(np.pi ** 2 / 3), support=np.inf)
-sigmoid = Kernel(sigmoid, var=(np.pi ** 2 / 4), support=np.inf)
+gaussian = Kernel(kernel_gaussian, var=1, support=np.inf)
+exp = Kernel(kernel_exponential, var=4, support=np.inf)
+box = Kernel(kernel_box, var=1 / 3, support=1)
+tri = Kernel(kernel_tri, var=1 / 6, support=1)
+epa = Kernel(kernel_epanechnikov, var=1 / 5, support=1)
+biweight = Kernel(kernel_biweight, var=1 / 7, support=1)
+triweight = Kernel(kernel_triweight, var=1 / 9, support=1)
+tricube = Kernel(kernel_tricube, var=35 / 243, support=1)
+cosine = Kernel(kernel_cosine, var=(1 - (8 / np.pi ** 2)), support=1)
+logistic = Kernel(kernel_logistic, var=(np.pi ** 2 / 3), support=np.inf)
+sigmoid = Kernel(kernel_sigmoid, var=(np.pi ** 2 / 4), support=np.inf)
 
 _kernel_functions = {
     "gaussian": gaussian,
