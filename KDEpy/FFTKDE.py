@@ -5,10 +5,12 @@ Module for the FFTKDE.
 """
 import numbers
 import warnings
+
 import numpy as np
-from KDEpy.BaseKDE import BaseKDE
-from KDEpy.binning import linear_binning, grid_is_sorted
 from scipy.signal import convolve
+
+from KDEpy.BaseKDE import BaseKDE
+from KDEpy.binning import grid_is_sorted, linear_binning
 from KDEpy.utils import cartesian
 
 
@@ -27,11 +29,11 @@ class FFTKDE(BaseKDE):
     of the kernel evaluation and the binned data is convolved. Using the
     convolution theorem, this step runs in :math:`O(n \log n)` time.
     While :math:`N` may be millions, :math:`n` is typically 2**10. The total
-    running time of the algorithm is :math:`O(N d^2 + n \log n)`.
+    running time of the algorithm is :math:`O(N 2^d + n \log n)`.
     See references for more information.
 
     The implementation is reminiscent of the one found in statsmodels. However,
-    ulike the statsmodels implementation every kernel is available for FFT
+    unlike the statsmodels implementation every kernel is available for FFT
     computation, weighted data is available for FFT computation, and no large
     temporary arrays are created.
 
@@ -48,7 +50,7 @@ class FFTKDE(BaseKDE):
     Examples
     --------
     >>> data = np.random.randn(2**10)
-    >>> # (1) Automatic bw selection using Improved Sheather Jones
+    >>> # (1) Automatic bw selection using Improved Sheather Jones (ISJ)
     >>> x, y = FFTKDE(bw='ISJ').fit(data).evaluate()
     >>> # (2) Explicit choice of kernel and bw (standard deviation of kernel)
     >>> x, y = FFTKDE(kernel='triweight', bw=0.5).fit(data).evaluate()
@@ -64,7 +66,7 @@ class FFTKDE(BaseKDE):
       London ; New York: Chapman and Hall/CRC, 1995. Pages 182-192.
     - Statsmodels implementation, at
       ``statsmodels.nonparametric.kde.KDEUnivariate``.
-      
+
     """
 
     def __init__(self, kernel="gaussian", bw=1, norm=2):
@@ -95,7 +97,7 @@ class FFTKDE(BaseKDE):
         >>> weights = [3, 4, 2, 1]
         >>> kde = FFTKDE().fit(data, weights=None)
         >>> kde = FFTKDE().fit(data, weights=weights)
-        >>> x, y = kde()
+        >>> x, y = kde.evaluate()
         """
 
         # Sets self.data
@@ -124,10 +126,12 @@ class FFTKDE(BaseKDE):
         Examples
         --------
         >>> kde = FFTKDE().fit([1, 3, 4, 7])
-        >>> # Two ways to evaluate, either with a grid or without
-        >>> x, y = kde.evaluate()
-        >>> x, y = kde.evaluate(256)
-        >>> y = kde.evaluate(x)
+        >>> # Three ways to evaluate a fitted KDE object:
+        >>> x, y = kde.evaluate()  # (1) Auto grid
+        >>> x, y = kde.evaluate(256)  # (2) Auto grid with 256 points
+        >>> # (3) Use a custom grid (make sure it's wider than the data)
+        >>> x_grid = np.linspace(-10, 25, num=2**10)  # <- Must be equidistant
+        >>> y = kde.evaluate(x_grid)  # Notice that only y is returned
         """
 
         # This method sets self.grid_points and verifies it
@@ -137,12 +141,10 @@ class FFTKDE(BaseKDE):
         if not grid_is_sorted(self.grid_points):
             raise ValueError("The grid must be sorted.")
 
-        if callable(self.bw):
-            bw = self.bw(self.data)
-        elif isinstance(self.bw, numbers.Number) and self.bw > 0:
+        if isinstance(self.bw, numbers.Number) and self.bw > 0:
             bw = self.bw
         else:
-            raise ValueError("The bw must be a callable or a number.")
+            raise ValueError("The bw must be a number.")
         self.bw = bw
 
         # Step 0 - Make sure data points are inside of the grid
@@ -156,15 +158,11 @@ class FFTKDE(BaseKDE):
 
         # Step 1 - Obtaining the grid counts
         # TODO: Consider moving this to the fitting phase instead
-        data = linear_binning(
-            self.data, grid_points=self.grid_points, weights=self.weights
-        )
+        data = linear_binning(self.data, grid_points=self.grid_points, weights=self.weights)
 
         # Step 2 - Computing kernel weights
         g_shape = self.grid_points.shape[1]
-        num_grid_points = np.array(
-            list(len(np.unique(self.grid_points[:, i])) for i in range(g_shape))
-        )
+        num_grid_points = np.array(list(len(np.unique(self.grid_points[:, i])) for i in range(g_shape)))
 
         num_intervals = num_grid_points - 1
         dx = (max_grid - min_grid) / num_intervals

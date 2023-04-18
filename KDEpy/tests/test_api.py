@@ -5,13 +5,15 @@ Test the API. The API should be considered fixed in future releases and should
 be equal for every implementation. Therefore it's important to have unit tests
 for the API.
 """
+import itertools
+
+import matplotlib
 import numpy as np
+import pytest
+
 from KDEpy.FFTKDE import FFTKDE
 from KDEpy.NaiveKDE import NaiveKDE
 from KDEpy.TreeKDE import TreeKDE
-import itertools
-import pytest
-import matplotlib
 
 matplotlib.use("Agg")  # For testing on servers
 
@@ -22,10 +24,7 @@ kde_pairs = list(itertools.combinations(kdes, 2))
 
 @pytest.mark.parametrize(
     "kde1, kde2, bw, kernel",
-    [
-        (k[0], k[1], bw, ker)
-        for (k, bw, ker) in itertools.product(kde_pairs, [0.1, "silverman", 1], kernels)
-    ],
+    [(k[0], k[1], bw, ker) for (k, bw, ker) in itertools.product(kde_pairs, [0.1, "silverman", 1], kernels)],
 )
 def test_api_models_kernels_bandwidths(kde1, kde2, bw, kernel):
     """
@@ -57,17 +56,13 @@ type_functions = [tuple, np.array, np.asfarray, lambda x: np.asfarray(x).reshape
 
 @pytest.mark.parametrize(
     "kde, bw, kernel, type_func",
-    itertools.product(
-        kdes, ["silverman", "scott", "ISJ", 0.5], ["epa", "gaussian"], type_functions
-    ),
+    itertools.product(kdes, ["silverman", "scott", "ISJ", 0.5], ["epa", "gaussian"], type_functions),
 )
 def test_api_types(kde, bw, kernel, type_func):
     """
     Test the API. Data and weights may be passed as tuples, arrays, lists, etc.
     """
     # Test various input types
-    data = [1, 2, 3]
-    weights = [4, 5, 6]
     data = np.random.randn(64)
     weights = np.random.randn(64) + 10
     model = kde(kernel=kernel, bw=bw)
@@ -81,10 +76,7 @@ def test_api_types(kde, bw, kernel, type_func):
 
 @pytest.mark.parametrize(
     "kde1, kde2, bw, kernel",
-    [
-        (k[0], k[1], bw, ker)
-        for (k, bw, ker) in itertools.product(kde_pairs, [0.5, 1], kernels)
-    ],
+    [(k[0], k[1], bw, ker) for (k, bw, ker) in itertools.product(kde_pairs, [0.5, 1], kernels)],
 )
 def test_api_models_kernels_bandwidths_2D(kde1, kde2, bw, kernel):
     """
@@ -94,7 +86,7 @@ def test_api_models_kernels_bandwidths_2D(kde1, kde2, bw, kernel):
     data = np.array([[0, 0], [0, 1], [0, 0.5], [-1, 1]])
     weights = [1, 2, 1, 0.8]
 
-    points = 2 ** 5
+    points = 2**5
 
     # Chained expression
     x1, y1 = kde1(kernel=kernel, bw=bw).fit(data, weights).evaluate(points)
@@ -125,17 +117,14 @@ def test_api_2D_data(estimator):
     # Create 2D data of shape (obs, dims)
     np.random.seed(123)
     n = 16
-    data = np.concatenate(
-        (np.random.randn(n).reshape(-1, 1), np.random.randn(n).reshape(-1, 1)), axis=1
-    )
+    data = np.concatenate((np.random.randn(n).reshape(-1, 1), np.random.randn(n).reshape(-1, 1)), axis=1)
 
-    grid_points = 2 ** 5  # Grid points in each dimension
+    grid_points = 2**5  # Grid points in each dimension
     N = 16  # Number of contours
 
     fig, axes = plt.subplots(ncols=3, figsize=(10, 3))
 
     for ax, norm in zip(axes, [1, 2, np.inf]):
-
         ax.set_title("Norm $p={}$".format(norm))
 
         # Compute
@@ -192,7 +181,29 @@ def test_api_2D_data_which_is_1D(estimator):
     assert np.all(np.isclose(prop, prop[0]))
 
 
+@pytest.mark.parametrize("estimator", kdes)
+def test_fitting_twice(estimator):
+    """Fitting several times should re-fit the BW.
+    Issue: https://github.com/tommyod/KDEpy/issues/78
+    """
+    x_grid = np.linspace(-100, 100, 2**6)
+
+    # Create two data sets
+    data = np.arange(-5, 6)
+    data_scaled = data * 10
+
+    kde = estimator(bw="silverman")
+
+    # The BW from the first fit should be used in the second fit
+    kde.fit(data).evaluate(x_grid)
+    y = kde.fit(data_scaled).evaluate(x_grid)
+
+    y2 = estimator(bw="silverman").fit(data_scaled).evaluate(x_grid)
+
+    assert np.allclose(y, y2)
+
+
 if __name__ == "__main__":
     if True:
         # --durations=10  <- May be used to show potentially slow tests
-        pytest.main(args=[".", "--doctest-modules", "-v", "--capture=sys", "-k 2D"])
+        pytest.main(args=[__file__, "--doctest-modules", "-v", "--capture=sys", "-k fitting"])

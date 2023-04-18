@@ -4,9 +4,13 @@
 Test the kernel functions K. Every kernel function is a radial basis function,
 i.e. it's a composition of a norm and a function defined on positive reals.
 """
+import itertools
+
 import numpy as np
+import pytest
 import scipy
 from scipy.integrate import quad
+
 from KDEpy.BaseKDE import BaseKDE
 from KDEpy.kernel_funcs import kernel_gauss_integral, kernel_trig_integral
 import pytest
@@ -33,9 +37,7 @@ class TestKernelHelperFunctions:
         """
         assert np.allclose(kernel_gauss_integral(dim), expected, rtol=10e-5)
 
-    @pytest.mark.parametrize(
-        "dim, expected", [(2, (0.29454, 0.12060)), (3, (0.23032, 0.074080))]
-    )
+    @pytest.mark.parametrize("dim, expected", [(2, (0.29454, 0.12060)), (3, (0.23032, 0.074080))])
     def test_trig_integral(self, dim, expected):
         """
         Test that the results of the trig integral are equal to those obtained
@@ -45,9 +47,7 @@ class TestKernelHelperFunctions:
 
 
 class TestKernelFunctions:
-    @pytest.mark.parametrize(
-        "fname, function", list(BaseKDE._available_kernels.items())
-    )
+    @pytest.mark.parametrize("fname, function", list(BaseKDE._available_kernels.items()))
     def test_integral_unity(self, fname, function):
         """
         Verify that all available kernel functions have an integral evaluating
@@ -79,9 +79,7 @@ class TestKernelFunctions:
         def int2D(x1, x2):
             return function([[x1, x2]], norm=p)
 
-        ans, err = scipy.integrate.nquad(
-            int2D, [[a, b], [a, b]], opts={"epsabs": 10e-2, "epsrel": 10e-2}
-        )
+        ans, err = scipy.integrate.nquad(int2D, [[a, b], [a, b]], opts={"epsabs": 10e-2, "epsrel": 10e-2})
 
         assert np.allclose(ans, 1, rtol=10e-4, atol=10e-4)
 
@@ -100,9 +98,7 @@ class TestKernelFunctions:
         def int2D(x1, x2, x3):
             return function([[x1, x2, x3]], norm=p)
 
-        ans, err = scipy.integrate.nquad(
-            int2D, [[a, b], [a, b], [a, b]], opts={"epsabs": 10e-1, "epsrel": 10e-1}
-        )
+        ans, err = scipy.integrate.nquad(int2D, [[a, b], [a, b], [a, b]], opts={"epsabs": 10e-1, "epsrel": 10e-1})
 
         assert np.allclose(ans, 1, rtol=10e-2, atol=10e-2)
 
@@ -110,11 +106,7 @@ class TestKernelFunctions:
         "fname, function, p",
         [
             (a[0], a[1], b)
-            for (a, b) in list(
-                itertools.product(
-                    BaseKDE._available_kernels.items(), [0.5, 1, 2, 5.5, np.inf]
-                )
-            )
+            for (a, b) in list(itertools.product(BaseKDE._available_kernels.items(), [0.5, 1, 2, 5.5, np.inf]))
         ],
     )
     def test_integral_unity_2D_p_norm(self, fname, function, p):
@@ -128,15 +120,13 @@ class TestKernelFunctions:
         if function.finite_support:
             a, b = -function.support, function.support
         else:
-            a, b = -4, 4
+            a, b = -6, 6
 
         # Perform integration 2D
         def int2D(x1, x2):
             return function([[x1, x2]], norm=p)
 
-        ans, err = scipy.integrate.nquad(
-            int2D, [[a, b], [a, b]], opts={"epsabs": 10e-1, "epsrel": 10e-1}
-        )
+        ans, err = scipy.integrate.nquad(int2D, [[a, b], [a, b]], opts={"epsabs": 10e-1, "epsrel": 10e-1})
 
         assert np.allclose(ans, 1, rtol=10e-3, atol=10e-3)
 
@@ -145,11 +135,7 @@ class TestKernelFunctions:
         "fname, function, p",
         [
             (a[0], a[1], b)
-            for (a, b) in list(
-                itertools.product(
-                    BaseKDE._available_kernels.items(), [1, 2, 5.5, np.inf]
-                )
-            )
+            for (a, b) in list(itertools.product(BaseKDE._available_kernels.items(), [1, 2, 5.5, np.inf]))
         ],
     )
     def test_integral_unity_3D_p_norm(self, fname, function, p):
@@ -169,15 +155,11 @@ class TestKernelFunctions:
         def int2D(x1, x2, x3):
             return function([[x1, x2, x3]], norm=p)
 
-        ans, err = scipy.integrate.nquad(
-            int2D, [[a, b], [a, b], [a, b]], opts={"epsabs": 10e-1, "epsrel": 10e-1}
-        )
+        ans, err = scipy.integrate.nquad(int2D, [[a, b], [a, b], [a, b]], opts={"epsabs": 10e-1, "epsrel": 10e-1})
 
         assert np.allclose(ans, 1, rtol=10e-2, atol=10e-2)
 
-    @pytest.mark.parametrize(
-        "fname, function", list(BaseKDE._available_kernels.items())
-    )
+    @pytest.mark.parametrize("fname, function", list(BaseKDE._available_kernels.items()))
     def test_monotonic_decreasing(self, fname, function):
         """
         Verify that all available kernel functions decrease away from 0.
@@ -193,9 +175,7 @@ class TestKernelFunctions:
         assert np.all(diffs_right <= 0)
         assert np.all(diffs_left >= 0)
 
-    @pytest.mark.parametrize(
-        "fname, function", list(BaseKDE._available_kernels.items())
-    )
+    @pytest.mark.parametrize("fname, function", list(BaseKDE._available_kernels.items()))
     def test_non_negative(self, fname, function):
         """
         Verify that all available kernel functions are non-negative.
@@ -207,6 +187,33 @@ class TestKernelFunctions:
             x = np.linspace(-5 * function.var, 5 * function.var)
         y = function(x)
         assert np.all(y >= 0)
+
+    @pytest.mark.parametrize("fname, function", list(BaseKDE._available_kernels.items()))
+    def test_standard_deviation_equals_one(self, fname, function):
+        """
+        Verify that the standard devaiation equals unity on a single data point.
+        """
+
+        if function.finite_support:
+            a, b = -function.support, function.support
+        else:
+            a, b = -10, 10
+
+        x = np.linspace(a, b, num=2**11)
+
+        # Scale so that standard deviation should be 10 instead of one
+        # Since 1**1 = 1, but 10**2 = 100
+        DESIRED_STD = 10
+        y = function(x) / DESIRED_STD
+        x = x * DESIRED_STD
+
+        # Find the std: sqrt(integral(  f(x) [x - E[f(x)]]  dx))
+        zeroth_moment = 0
+        dx = x[1] - x[0]
+        second_moment = np.sum(dx * y * (x - zeroth_moment) ** 2)
+        standard_deviation = np.sqrt(second_moment)
+
+        assert np.allclose(standard_deviation, DESIRED_STD, rtol=1e-03)
 
 
 if __name__ == "__main__":

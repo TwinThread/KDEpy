@@ -16,12 +16,13 @@
 # import sys
 # sys.path.insert(0, os.path.abspath('.'))
 from KDEpy import __version__
+import datetime as dt
 
 
 # -- Project information -----------------------------------------------------
 
 project = "KDEpy"
-copyright = "2018, tommyod"
+copyright = "2018 - {}, tommyod".format(str(dt.date.today().year))
 author = "tommyod"
 
 # The short X.Y version
@@ -41,7 +42,7 @@ release = __version__
 # ones.
 extensions = [
     "sphinx.ext.autodoc",
-    "sphinx.ext.doctest",
+    #"sphinx.ext.doctest",
     "sphinx.ext.intersphinx",
     "sphinx.ext.mathjax",
     "sphinx.ext.viewcode",
@@ -54,8 +55,10 @@ extensions = [
     "matplotlib.sphinxext.plot_directive",
     "IPython.sphinxext.ipython_directive",
     "IPython.sphinxext.ipython_console_highlighting",
-    "sphinx.ext.inheritance_diagram",
+   # "sphinx.ext.inheritance_diagram",
 ]
+
+numpydoc_show_class_members = False 
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
@@ -74,7 +77,7 @@ master_doc = "index"
 #
 # This is also used if you do content translation via gettext catalogs.
 # Usually you set "language" from the command line for these cases.
-language = None
+language = "en"
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
@@ -110,7 +113,7 @@ html_theme_options = {
     "github_repo": "KDEpy",
     "github_button": True,
     "github_banner": True,
-    "travis_button": True,
+    "travis_button": False,
     "show_powered_by": False,
     "font_family": '-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,\
         "Helvetica Neue",Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji"\
@@ -175,9 +178,7 @@ latex_elements = {
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
-latex_documents = [
-    (master_doc, "KDEpy.tex", "KDEpy Documentation", "tommyod", "manual")
-]
+latex_documents = [(master_doc, "KDEpy.tex", "KDEpy Documentation", "tommyod", "manual")]
 
 
 # -- Options for manual page output ------------------------------------------

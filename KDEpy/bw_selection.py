@@ -3,13 +3,15 @@
 """
 Functions for bandwidth selection.
 """
+import warnings
+
 import numpy as np
 import scipy
-import warnings
-from KDEpy.binning import linear_binning
-from KDEpy.utils import autogrid
 from scipy import fftpack
 from scipy.optimize import brentq
+
+from KDEpy.binning import linear_binning
+from KDEpy.utils import autogrid
 
 # Choose the largest available float on the system
 try:
@@ -41,10 +43,10 @@ def _fixed_point(t, N, I_sq, a2):
     --------
     >>> # From the matlab code
     >>> ans = _fixed_point(0.01, 50, np.arange(1, 51), np.arange(1, 51))
-    >>> assert np.allclose(ans, 0.009947962622371)
+    >>> assert np.allclose(ans, 0.0099076220293967618515)
     >>> # another
     >>> ans = _fixed_point(0.07, 25, np.arange(1, 11), np.arange(1, 11))
-    >>> assert np.allclose(ans, 0.069100181315957)
+    >>> assert np.allclose(ans, 0.068342291525717486795)
 
     References
     ----------
@@ -60,11 +62,7 @@ def _fixed_point(t, N, I_sq, a2):
     ell = 7
 
     # Fast evaluation of |f^l|^2 using the DCT, see Plancherel theorem
-    f = (
-        2
-        * np.pi ** (2 * ell)
-        * np.sum(np.power(I_sq, ell) * a2 * np.exp(-I_sq * np.pi ** 2 * t))
-    )
+    f = (0.5) * np.pi ** (2 * ell) * np.sum(np.power(I_sq, ell) * a2 * np.exp(-I_sq * np.pi**2 * t))
 
     # Norm of a function, should never be negative
     if f <= 0:
@@ -80,11 +78,7 @@ def _fixed_point(t, N, I_sq, a2):
         time = np.power((2 * const * K0 / (N * f)), (2.0 / (3.0 + 2.0 * s)))
 
         # Step two: estimate |f^s| from t_s
-        f = (
-            2
-            * np.pi ** (2 * s)
-            * np.sum(np.power(I_sq, s) * a2 * np.exp(-I_sq * np.pi ** 2 * time))
-        )
+        f = (0.5) * np.pi ** (2 * s) * np.sum(np.power(I_sq, s) * a2 * np.exp(-I_sq * np.pi**2 * time))
 
     # This is the minimizer of the AMISE
     t_opt = np.power(2 * N * np.sqrt(np.pi) * f, -2.0 / 5)
@@ -100,7 +94,7 @@ def _root(function, N, args):
     >>> # From the matlab code
     >>> ints = np.arange(1, 51)
     >>> ans = _root(_fixed_point, N=50, args=(50, ints, ints))
-    >>> np.allclose(ans, 5.203713947289470e-05)
+    >>> np.allclose(ans, 9.237610787616029e-05)
     True
     """
     # From the implementation by Botev, the original paper author
@@ -130,7 +124,7 @@ def _root(function, N, args):
     return x
 
 
-def improved_sheather_jones(data):
+def improved_sheather_jones(data, weights=None):
     """
     The Improved Sheater Jones (ISJ) algorithm from the paper by Botev et al.
     This algorithm computes the optimal bandwidth for a gaussian kernel,
@@ -144,12 +138,26 @@ def improved_sheather_jones(data):
     sheather+jones+why+use+dct&source=bl&ots=1ETdKd_6EF&sig=jZk4R515GB1xsn-
     VZVnjr-JfjSI&hl=en&sa=X&ved=2ahUKEwi1_czNncTcAhVGhqYKHaPiBtcQ6AEwA3oEC
     AcQAQ#v=onepage&q=sheather%20jones%20why%20use%20dct&f=false
+
+    Parameters
+    ----------
+    data: array-like
+        The data points. Data must have shape (obs, 1).
+    weights: array-like, optional
+        One weight per data point. Must have shape (obs,). If None is
+        passed, uniform weights are used.
     """
     obs, dims = data.shape
     if not dims == 1:
         raise ValueError("ISJ is only available for 1D data.")
 
-    n = 2 ** 10
+    n = 2**10
+
+    # weights <= 0 still affect calculations unless we remove them
+    if weights is not None:
+        data = data[weights > 0]
+        weights = weights[weights > 0]
+
     # Setting `percentile` higher decreases the chance of overflow
     xmesh = autogrid(data, boundary_abs=6, num_points=n, boundary_rel=0.5)
     data = data.ravel()
@@ -163,15 +171,18 @@ def improved_sheather_jones(data):
 
     # Use linear binning to bin the data on an equidistant grid, this is a
     # prerequisite for using the FFT (evenly spaced samples)
-    initial_data = linear_binning(data.reshape(-1, 1), xmesh)
+    initial_data = linear_binning(data.reshape(-1, 1), xmesh, weights)
     assert np.allclose(initial_data.sum(), 1)
 
     # Compute the type 2 Discrete Cosine Transform (DCT) of the data
     a = fftpack.dct(initial_data)
 
     # Compute the bandwidth
+    # The definition of a2 used here and in `_fixed_point` correspond to
+    # the one cited in this issue:
+    # https://github.com/tommyod/KDEpy/issues/95
     I_sq = np.power(np.arange(1, n, dtype=FLOAT), 2)
-    a2 = a[1:] ** 2 / 4
+    a2 = a[1:] ** 2
 
     # Solve for the optimal (in the AMISE sense) t
     t_star = _root(_fixed_point, N, args=(N, I_sq, a2))
@@ -183,7 +194,7 @@ def improved_sheather_jones(data):
 
     # Smooth the initial data using the computed optimal t
     # Multiplication in frequency domain is convolution
-    # integers = np.arange(n, dtype=np.float)
+    # integers = np.arange(n, dtype=float)
     # a_t = a * np.exp(-integers**2 * np.pi ** 2 * t_star / 2)
 
     # Diving by 2 done because of the implementation of fftpack.idct
@@ -195,7 +206,7 @@ def improved_sheather_jones(data):
     return bandwidth
 
 
-def scotts_rule(data):
+def scotts_rule(data, weights=None):
     """
     Scotts rule.
 
@@ -212,6 +223,9 @@ def scotts_rule(data):
     if not len(data.shape) == 2:
         raise ValueError("Data must be of shape (obs, dims).")
 
+    if weights is not None:
+        warnings.warn("Scott's rule currently ignores all weights")
+
     obs, dims = data.shape
     if not dims == 1:
         raise ValueError("Scotts rule is only available for 1D data.")
@@ -223,7 +237,7 @@ def scotts_rule(data):
     return sigma * np.power(obs, -1.0 / (dims + 4))
 
 
-def silvermans_rule(data):
+def silvermans_rule(data, weights=None):
     """
     Returns optimal smoothing (standard deviation) if the data is close to
     normal.
@@ -244,6 +258,9 @@ def silvermans_rule(data):
     if not dims == 1:
         raise ValueError("Silverman's rule is only available for 1D data.")
 
+    if weights is not None:
+        warnings.warn("Silverman's rule currently ignores all weights")
+
     if obs == 1:
         return 1
     if obs < 1:
@@ -261,9 +278,7 @@ def silvermans_rule(data):
         return sigma * (obs * 3 / 4.0) ** (-1 / 5)
     else:
         # stats.norm.ppf(.99) - stats.norm.ppf(.01) = 4.6526957480816815
-        IQR = (
-            np.percentile(data, q=99) - np.percentile(data, q=1)
-        ) / 4.6526957480816815
+        IQR = (np.percentile(data, q=99) - np.percentile(data, q=1)) / 4.6526957480816815
         if IQR > 0:
             bw = IQR * (obs * 3 / 4.0) ** (-1 / 5)
             warnings.warn(
@@ -275,9 +290,7 @@ Setting bw = {}".format(
             return bw
 
         # Here, all values are basically constant
-        warnings.warn(
-            "Silverman's rule failed. Too many idential values. Setting bw = 1.0"
-        )
+        warnings.warn("Silverman's rule failed. Too many idential values. Setting bw = 1.0")
         return 1.0
 
 

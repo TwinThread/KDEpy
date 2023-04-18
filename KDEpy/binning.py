@@ -29,13 +29,14 @@ References
   Journal of Computational and Graphical Statistics 3, no. 1 (March 1, 1994).
   https://doi.org/10.1080/10618600.1994.10474629.
 """
-import numpy as np
-import itertools
 import functools
+import itertools
 import operator
-from KDEpy.utils import cartesian
-import cutils
 
+import numpy as np
+
+import cutils
+from KDEpy.utils import cartesian
 
 grid_is_sorted = cutils.grid_is_sorted
 
@@ -76,8 +77,8 @@ def linbin_cython(data, grid_points, weights=None):
     True
     """
     # Convert the data and grid points
-    data = np.asarray_chkfinite(data, dtype=np.float)
-    grid_points = np.asarray_chkfinite(grid_points, dtype=np.float)
+    data = np.asarray_chkfinite(data, dtype=float)
+    grid_points = np.asarray_chkfinite(grid_points, dtype=float)
 
     assert len(data.shape) == 1
     assert len(grid_points.shape) == 1
@@ -88,7 +89,7 @@ def linbin_cython(data, grid_points, weights=None):
 
     if weights is not None:
         assert len(weights.shape) == 1
-        weights = np.asarray_chkfinite(weights, dtype=np.float)
+        weights = np.asarray_chkfinite(weights, dtype=float)
         weights = weights / np.sum(weights)
 
     if (weights is not None) and (len(data) != len(weights)):
@@ -146,8 +147,8 @@ def linbin_numpy(data, grid_points, weights=None):
     True
     """
     # Convert the data and grid points
-    data = np.asarray_chkfinite(data, dtype=np.float)
-    grid_points = np.asarray_chkfinite(grid_points, dtype=np.float)
+    data = np.asarray_chkfinite(data, dtype=float)
+    grid_points = np.asarray_chkfinite(grid_points, dtype=float)
     assert len(data.shape) == 1
     assert len(grid_points.shape) == 1
 
@@ -158,7 +159,7 @@ def linbin_numpy(data, grid_points, weights=None):
     if weights is None:
         weights = np.ones_like(data)
 
-    weights = np.asarray_chkfinite(weights, dtype=np.float)
+    weights = np.asarray_chkfinite(weights, dtype=float)
     weights = weights / np.sum(weights)
 
     if not len(data) == len(weights):
@@ -175,7 +176,7 @@ def linbin_numpy(data, grid_points, weights=None):
     # The integral part is used for lookups, the fractional part is used
     # to weight the data
     fractional, integral = np.modf(transformed_data)
-    integral = integral.astype(np.int)
+    integral = integral.astype(int)
 
     # Sort the integral values, and the fractional data and weights by
     # the same key. This lets us use binary search, which is faster
@@ -192,13 +193,10 @@ def linbin_numpy(data, grid_points, weights=None):
     # If the data is not a subset of the grid, the integral values will be
     # outside of the grid. To solve the problem, we filter these values away
     unique_integrals = np.unique(integral)
-    unique_integrals = unique_integrals[
-        (unique_integrals >= 0) & (unique_integrals <= len(grid_points))
-    ]
+    unique_integrals = unique_integrals[(unique_integrals >= 0) & (unique_integrals <= len(grid_points))]
 
     result = np.asfarray(np.zeros(len(grid_points) + 1))
     for grid_point in unique_integrals:
-
         # Use binary search to find indices for the grid point
         # Then sum the data assigned to that grid point
         low_index = np.searchsorted(integral, grid_point, side="left")
@@ -235,10 +233,10 @@ def linbin_Ndim_python(data, grid_points, weights=None):
     >>> d = linbin_Ndim_python(np.array([[1.0, 0, 0]]), grid_points, None)
     """
     # Convert the data and grid points
-    data = np.asarray_chkfinite(data, dtype=np.float)
-    grid_points = np.asarray_chkfinite(grid_points, dtype=np.float)
+    data = np.asarray_chkfinite(data, dtype=float)
+    grid_points = np.asarray_chkfinite(grid_points, dtype=float)
     if weights is not None:
-        weights = np.asarray_chkfinite(weights, dtype=np.float)
+        weights = np.asarray_chkfinite(weights, dtype=float)
     else:
         # This is not efficient, but this function should just be correct
         # The faster algorithm is implemented in Cython
@@ -262,11 +260,10 @@ def linbin_Ndim_python(data, grid_points, weights=None):
     data = (data - min_grid) / dx
 
     # Create results
-    result = np.zeros(grid_points.shape[0], dtype=np.float)
+    result = np.zeros(grid_points.shape[0], dtype=float)
 
     # Go through every data point
     for observation, weight in zip(data, weights):
-
         # Compute integer part and fractional part for every x_i
         # Compute relation to previous grid point, and next grid point
         int_frac = (
@@ -280,7 +277,6 @@ def linbin_Ndim_python(data, grid_points, weights=None):
         # Go through every cartesian product, i.e. every corner in the
         # hypercube grid points surrounding the observation
         for cart_prod in itertools.product(*int_frac):
-
             fractions = (frac for (integral, frac) in cart_prod)
             integrals = list(integral for (integral, frac) in cart_prod)
             # Find the index in the resulting array, compured by
@@ -326,10 +322,10 @@ def linbin_Ndim(data, grid_points, weights=None):
     assert data_dims >= 2
 
     # Convert the data and grid points
-    data = np.asarray_chkfinite(data, dtype=np.float)
-    grid_points = np.asarray_chkfinite(grid_points, dtype=np.float)
+    data = np.asarray_chkfinite(data, dtype=float)
+    grid_points = np.asarray_chkfinite(grid_points, dtype=float)
     if weights is not None:
-        weights = np.asarray_chkfinite(weights, dtype=np.float)
+        weights = np.asarray_chkfinite(weights, dtype=float)
         weights = weights / np.sum(weights)
 
     if (weights is not None) and (data.shape[0] != len(weights)):
@@ -349,7 +345,7 @@ def linbin_Ndim(data, grid_points, weights=None):
     data = (data - min_grid) / dx
 
     # Create results
-    result = np.zeros(grid_points.shape[0], dtype=np.float)
+    result = np.zeros(grid_points.shape[0], dtype=float)
 
     # Call the Cython implementation. Loops are unrolled if d=1 or d=2,
     # and if d >= 3 a more general routine is called. It's a bit slower since
@@ -359,14 +355,10 @@ def linbin_Ndim(data, grid_points, weights=None):
     if weights is not None:
         if data_dims >= 3:
             binary_flgs = cartesian(([0, 1],) * dims)
-            result = cutils.iterate_data_ND_weighted(
-                data, weights, result, grid_num, obs_tot, binary_flgs
-            )
+            result = cutils.iterate_data_ND_weighted(data, weights, result, grid_num, obs_tot, binary_flgs)
         else:
-            result = cutils.iterate_data_2D_weighted(
-                data, weights, result, grid_num, obs_tot
-            )
-        result = np.asarray_chkfinite(result, dtype=np.float)
+            result = cutils.iterate_data_2D_weighted(data, weights, result, grid_num, obs_tot)
+        result = np.asarray_chkfinite(result, dtype=float)
 
     # Unweighted data has two specific routines too. This is because creating
     # uniform weights takes relatively long time. It's faster to have a
@@ -374,12 +366,10 @@ def linbin_Ndim(data, grid_points, weights=None):
     else:
         if data_dims >= 3:
             binary_flgs = cartesian(([0, 1],) * dims)
-            result = cutils.iterate_data_ND(
-                data, result, grid_num, obs_tot, binary_flgs
-            )
+            result = cutils.iterate_data_ND(data, result, grid_num, obs_tot, binary_flgs)
         else:
             result = cutils.iterate_data_2D(data, result, grid_num, obs_tot)
-        result = np.asarray_chkfinite(result, dtype=np.float)
+        result = np.asarray_chkfinite(result, dtype=float)
         result = result / data_obs
 
     assert np.allclose(np.sum(result), 1)
@@ -418,10 +408,10 @@ def linear_binning(data, grid_points, weights=None):
     >>> np.allclose(data, np.array([0.33333, 0.36667, 0.3]))
     True
     """
-    data = np.asarray_chkfinite(data, dtype=np.float)
-    grid_points = np.asarray_chkfinite(grid_points, dtype=np.float)
+    data = np.asarray_chkfinite(data, dtype=float)
+    grid_points = np.asarray_chkfinite(grid_points, dtype=float)
     if weights is not None:
-        weights = np.asarray_chkfinite(weights, dtype=np.float)
+        weights = np.asarray_chkfinite(weights, dtype=float)
 
     # Make sure the dimensionality makes sense
     try:

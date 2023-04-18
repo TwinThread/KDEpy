@@ -3,14 +3,16 @@
 """
 Test the implemented estimators against each other on simple data sets.
 """
-import numpy as np
-from KDEpy.NaiveKDE import NaiveKDE
-from KDEpy.TreeKDE import TreeKDE
-from KDEpy.FFTKDE import FFTKDE
 import itertools
+
+import numpy as np
 import pytest
 
-N = 2 ** 5
+from KDEpy.FFTKDE import FFTKDE
+from KDEpy.NaiveKDE import NaiveKDE
+from KDEpy.TreeKDE import TreeKDE
+
+N = 2**5
 
 estimators = [NaiveKDE, TreeKDE, FFTKDE]
 estimators_2 = list(itertools.combinations(estimators, 2))
@@ -44,9 +46,7 @@ def test_vs_simple_weighted(est1, est2):
     assert np.sqrt(np.mean((y1 - y2) ** 2)) < 0.0001
 
 
-@pytest.mark.parametrize(
-    "estimators, kernel, bw", list(itertools.product(estimators_2, kernels, [0.1, 5]))
-)
+@pytest.mark.parametrize("estimators, kernel, bw", list(itertools.product(estimators_2, kernels, [0.1, 5])))
 def test_vs_simple_weighted_kernels(estimators, kernel, bw):
     """
     Test every kernel function over every implementation.
@@ -69,8 +69,8 @@ if __name__ == "__main__":
     est1, est2 = NaiveKDE, TreeKDE
 
     np.random.seed(13)
-    data = np.random.randn(2 ** 8) * 10
-    weights = np.random.randn(2 ** 8) ** 2 + 1
+    data = np.random.randn(2**8) * 10
+    weights = np.random.randn(2**8) ** 2 + 1
     x1, y1 = est1(bw=100).fit(data, weights)()
     x1, y2 = est2(bw=100).fit(data, weights)()
     import matplotlib.pyplot as plt

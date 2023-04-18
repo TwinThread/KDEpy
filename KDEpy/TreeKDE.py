@@ -3,9 +3,11 @@
 """
 Module for the TreeKDE.
 """
-from scipy.spatial import cKDTree
 import numbers
+
 import numpy as np
+from scipy.spatial import cKDTree
+
 from KDEpy.BaseKDE import BaseKDE
 
 
@@ -135,10 +137,8 @@ class TreeKDE(BaseKDE):
         bw = self.bw
         if isinstance(bw, numbers.Number):
             bw = np.asfarray(np.ones(obs) * bw)
-        elif callable(bw):
-            bw = np.asfarray(np.ones(obs) * bw(self.data))
         else:
-            bw = np.asarray_chkfinite(bw, dtype=np.float)
+            bw = np.asarray_chkfinite(bw, dtype=float)
 
         # Initialize the tree structure for fast lookups of neighbors
         tree = cKDTree(self.data)
@@ -152,14 +152,11 @@ class TreeKDE(BaseKDE):
         # Since we iterate through grid points, we need the maximum bw to
         # ensure that we get data points that are close enough
         for i, grid_point in enumerate(self.grid_points):
-
             # Query for data points that are close to this grid point
             # TODO: Is this epsilon value sensible?
             # Scipy 1.3.0 introduced error: ValueError: ndarray is not C-contiguous
             grid_point = np.ascontiguousarray(grid_point)
-            indices = tree.query_ball_point(
-                x=grid_point, r=kernel_radius, p=self.norm, eps=eps * obs ** 0.5
-            )
+            indices = tree.query_ball_point(x=grid_point, r=kernel_radius, p=self.norm, eps=eps * obs**0.5)
 
             # Use broadcasting to find x-values (distances)
             x = grid_point - self.data[indices]

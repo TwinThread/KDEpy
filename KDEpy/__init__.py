@@ -2,14 +2,11 @@
 # -*- coding: utf-8 -*-
 
 
+from KDEpy.FFTKDE import FFTKDE
 from KDEpy.NaiveKDE import NaiveKDE
 from KDEpy.TreeKDE import TreeKDE
-from KDEpy.FFTKDE import FFTKDE
 
-# If this is incremented, also increment in setup.py
-__version__ = "0.6.11"
+__version__ = "1.1.1"
 __author__ = "tommyod"
 
-TreeKDE = TreeKDE
-NaiveKDE = NaiveKDE
-FFTKDE = FFTKDE
+__all__ = ["TreeKDE", "NaiveKDE", "FFTKDE"]

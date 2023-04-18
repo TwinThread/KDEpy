@@ -8,6 +8,15 @@ https://github.com/pypa/sampleproject
 """
 
 from setuptools import Extension, setup
+import os
+import re
+
+HERE = os.path.abspath(os.path.dirname(__file__))
+
+
+def read(fname):
+    return open(os.path.join(HERE, fname)).read()
+
 
 try:
     from Cython.Distutils import build_ext
@@ -18,8 +27,9 @@ else:
     can_build_ext = True
 
 
-# If this is incremented, also increment in __init__.py
-VERSION = "0.6.11"
+# Get version
+with open(os.path.join(HERE, "KDEpy/__init__.py"), encoding="utf-8") as file:
+    VERSION = re.search(r"__version__ = \"(.*?)\"", file.read()).group(1)
 
 cmdclass = {}
 ext_modules = []
@@ -38,18 +48,22 @@ setup(
     name="KDEpy",
     version=VERSION,
     description="Kernel Density Estimation in Python.",
-    long_description="Kernel Density Estimation in Python.",
+    long_description=read("README.md"),
+    long_description_content_type="text/markdown",
     url="https://github.com/tommyod/KDEpy",
     author="tommyod",
-    author_email="tod001@uib.no",
-    license="GNU GPLv3",
+    author_email="tommy.odland@gmail.com",
+    license="new BSD",
     # See https://pypi.python.org/pypi?%3Aaction=list_classifiers
     classifiers=[
-        "Development Status :: 4 - Beta",
-        "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
-        "Programming Language :: Python :: 3.5",
+        "Development Status :: 5 - Production/Stable",
+        "License :: OSI Approved :: BSD License",
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
     ],
     packages=["KDEpy"],
     install_requires=["numpy>=1.14.2", "scipy>=1.0.1", "matplotlib>=2.2.0"],

@@ -6,13 +6,14 @@ is everywhere non-negative and whose integral evalutes to unity. Every kernel
 function takes an `x` of shape (obs, dims) and returns a y of shape (obs, 1).
 """
 
-import numpy as np
 import collections.abc
-import numbers
 import functools
-from scipy.special import gamma, factorial2
-from scipy.stats import norm
+import numbers
+
+import numpy as np
 from scipy.optimize import brentq
+from scipy.special import factorial2, gamma
+from scipy.stats import norm
 
 # In R, the following are implemented:
 # "gaussian", "rectangular", "triangular", "epanechnikov",
@@ -141,12 +142,12 @@ def volume_unit_ball(d, p=2):
       Mathematics Magazine 78, no. 5 (2005): 390–95.
       https://doi.org/10.2307/30044198.
     """
-    return 2.0 ** d * gamma(1 + 1 / p) ** d / gamma(1 + d / p)
+    return 2.0**d * gamma(1 + 1 / p) ** d / gamma(1 + d / p)
 
 
 def kernel_epanechnikov(x, dims=1):
     normalization = 2 / (dims + 2)
-    dist_sq = x ** 2
+    dist_sq = x**2
     out = np.zeros_like(dist_sq)
     mask = dist_sq < 1
     out[mask] = (1 - dist_sq)[mask] / normalization
@@ -154,8 +155,8 @@ def kernel_epanechnikov(x, dims=1):
 
 
 def kernel_gaussian(x, dims=1):
-    normalization = dims * kernel_gauss_integral(dims - 1)
-    dist_sq = x ** 2
+    normalization = dims * gauss_integral(dims - 1)
+    dist_sq = x**2
     return np.exp(-dist_sq / 2) / normalization
 
 
@@ -182,7 +183,7 @@ def kernel_tri(x, dims=1):
 
 def kernel_biweight(x, dims=1):
     normalization = 8 / ((dims + 2) * (dims + 4))
-    dist_sq = x ** 2
+    dist_sq = x**2
     out = np.zeros_like(dist_sq)
     mask = dist_sq < 1
     out[mask] = np.maximum(0, (1 - dist_sq) ** 2)[mask] / normalization
@@ -191,7 +192,7 @@ def kernel_biweight(x, dims=1):
 
 def kernel_triweight(x, dims=1):
     normalization = 48 / ((dims + 2) * (dims + 4) * (dims + 6))
-    dist_sq = x ** 2
+    dist_sq = x**2
     out = np.zeros_like(dist_sq)
     mask = dist_sq < 1
     out[mask] = np.maximum(0, (1 - dist_sq) ** 3)[mask] / normalization
@@ -202,7 +203,7 @@ def kernel_tricube(x, dims=1):
     normalization = 162 / ((dims + 3) * (dims + 6) * (dims + 9))
     out = np.zeros_like(x)
     mask = x < 1
-    out[mask] = np.maximum(0, (1 - x ** 3) ** 3)[mask] / normalization
+    out[mask] = np.maximum(0, (1 - x**3) ** 3)[mask] / normalization
     return out
 
 
@@ -320,9 +321,7 @@ class Kernel(collections.abc.Callable):
         else:
             distances = np.abs(x).ravel()
 
-        return self.function(distances / real_bw, dims) / (
-            (real_bw ** dims) * volume_func(dims)
-        )
+        return self.function(distances / real_bw, dims) / ((real_bw**dims) * volume_func(dims))
 
     __call__ = evaluate
 
