@@ -12,7 +12,9 @@ import scipy
 from scipy.integrate import quad
 
 from KDEpy.BaseKDE import BaseKDE
-from KDEpy.kernel_funcs import gauss_integral, trig_integral
+from KDEpy.kernel_funcs import kernel_gauss_integral, kernel_trig_integral
+import pytest
+import itertools
 
 
 class TestKernelHelperFunctions:
@@ -33,7 +35,7 @@ class TestKernelHelperFunctions:
         Test that the results of the gauss integral are equal to those obtained
         using WolframAlpha for small test cases.
         """
-        assert np.allclose(gauss_integral(dim), expected, rtol=10e-5)
+        assert np.allclose(kernel_gauss_integral(dim), expected, rtol=10e-5)
 
     @pytest.mark.parametrize("dim, expected", [(2, (0.29454, 0.12060)), (3, (0.23032, 0.074080))])
     def test_trig_integral(self, dim, expected):
@@ -41,7 +43,7 @@ class TestKernelHelperFunctions:
         Test that the results of the trig integral are equal to those obtained
         using WolframAlpha for small test cases.
         """
-        assert np.allclose(trig_integral(dim), expected, rtol=10e-5)
+        assert np.allclose(kernel_trig_integral(dim), expected, rtol=10e-5)
 
 
 class TestKernelFunctions:
