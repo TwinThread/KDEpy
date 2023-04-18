@@ -339,17 +339,17 @@ logistic = Kernel(kernel_logistic, var=(np.pi ** 2 / 3), support=np.inf)
 sigmoid = Kernel(kernel_sigmoid, var=(np.pi ** 2 / 4), support=np.inf)
 
 _kernel_functions = {
-    "gaussian": kernel_gaussian,
-    "exponential": kernel_exponential,
-    "box": kernel_box,
-    "tri": kernel_tri,
-    "epa": kernel_epanechnikov,
-    "biweight": kernel_biweight,
-    "triweight": kernel_triweight,
-    "tricube": kernel_tricube,
-    "cosine": kernel_cosine,
-    # 'logistic': kernel_logistic,
-    # 'sigmoid': kernel_sigmoid
+    "gaussian": gaussian,
+    "exponential": exp,
+    "box": box,
+    "tri": tri,
+    "epa": epa,
+    "biweight": biweight,
+    "triweight": triweight,
+    "tricube": tricube,
+    "cosine": cosine,
+    'logistic': logistic,
+    'sigmoid': sigmoid
 }
 
 
